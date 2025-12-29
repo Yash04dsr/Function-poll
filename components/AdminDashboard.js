@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [festivalAverage, setFestivalAverage] = useState(3.0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Real-time listener for polls
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function AdminDashboard() {
       }));
       
       setPolls(pollsData);
+      setIsLoading(false);
       
       // Calculate festival-wide average
       const avgScore = calculateFestivalAverage(pollsData);
@@ -125,6 +127,39 @@ export default function AdminDashboard() {
     }
   };
 
+  // Export results to CSV
+  const handleExportCSV = () => {
+    const csvRows = [];
+    const headers = ['Rank', 'Performance', 'Total Votes', 'Raw Average Score', 'Overall Score', '5★', '4★', '3★', '2★', '1★'];
+    csvRows.push(headers.join(','));
+
+    sortedLeaderboard.forEach((item, index) => {
+      const row = [
+        index + 1,
+        `"${item.question}"`,
+        item.totalVotes,
+        formatScore(item.simpleAverage),
+        formatScore(item.bayesianAverage),
+        item.voteCounts?.vote5 || 0,
+        item.voteCounts?.vote4 || 0,
+        item.voteCounts?.vote3 || 0,
+        item.voteCounts?.vote2 || 0,
+        item.voteCounts?.vote1 || 0,
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const timestamp = new Date().toISOString().split('T')[0];
+    link.download = `festival-results-${timestamp}.csv`;
+    link.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   // Prepare leaderboard data with both metrics
   const leaderboardData = polls.map(poll => {
     const simpleAvg = calculateSimpleAverage(poll.voteCounts || {});
@@ -176,9 +211,18 @@ export default function AdminDashboard() {
 
         {/* Leaderboard - Results Panel */}
         <div className="bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-200">
-            🏆 Results Leaderboard
-          </h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+            <h2 className="text-2xl font-semibold text-gray-200">
+              🏆 Results Leaderboard
+            </h2>
+            <button
+              onClick={handleExportCSV}
+              disabled={sortedLeaderboard.length === 0}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              📥 Export CSV
+            </button>
+          </div>
           
           <div className="overflow-x-auto">
             <table className="w-full text-left">
@@ -194,7 +238,31 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {sortedLeaderboard.length === 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="7" className="py-12 text-center">
+                      <div className="flex flex-col items-center">
+                        <svg className="animate-spin h-8 w-8 text-gray-400 mb-2" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        <p className="text-gray-400">Loading results...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : sortedLeaderboard.length === 0 ? (
                   <tr>
                     <td colSpan="6" className="py-8 text-center text-gray-500">
                       No polls created yet

@@ -2,12 +2,15 @@
 import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, query, updateDoc, doc, increment } from 'firebase/firestore';
+import { getTotalVotes } from '../lib/utils';
 
 export default function VotingPage() {
   const [activePoll, setActivePoll] = useState(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedRating, setSelectedRating] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Real-time listener for active poll
   useEffect(() => {
@@ -22,6 +25,7 @@ export default function VotingPage() {
       // Find the active poll
       const active = polls.find(poll => poll.isActive === true);
       setActivePoll(active || null);
+      setIsLoading(false);
       
       // Check if user has already voted for this poll
       if (active) {
@@ -62,6 +66,10 @@ export default function VotingPage() {
       localStorage.setItem(`rating_${activePoll.id}`, rating.toString());
       setHasVoted(true);
       
+      // Show confetti animation
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
+      
     } catch (error) {
       console.error('Error submitting vote:', error);
       alert('Failed to submit vote. Please try again.');
@@ -82,6 +90,31 @@ export default function VotingPage() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center px-3 sm:px-4 py-4 sm:py-0">
+      {/* Confetti Animation */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-10px',
+                animationDelay: `${Math.random() * 0.5}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+              }}
+            >
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
@@ -92,7 +125,31 @@ export default function VotingPage() {
         </div>
 
         {/* Main Content */}
-        {!activePoll ? (
+        {isLoading ? (
+          // Loading state
+          <div className="bg-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 md:p-12 text-center">
+            <div className="flex flex-col items-center">
+              <svg className="animate-spin h-12 w-12 text-gray-400 mb-4" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-300">Connecting...</h2>
+              <p className="text-gray-500 mt-2">Loading voting system</p>
+            </div>
+          </div>
+        ) : !activePoll ? (
           // No active poll
           <div className="bg-gray-800 rounded-2xl shadow-2xl p-8 md:p-12 text-center">
             <div className="text-6xl mb-4">⏳</div>
@@ -143,8 +200,9 @@ export default function VotingPage() {
               <h2 className="text-2xl md:text-3xl font-bold mb-2">
                 {activePoll.question}
               </h2>
-              <p className="text-gray-400">Tap a rating to submit your vote</p>
-            </div>
+              <p className="text-gray-400">Tap a rating to submit your vote</p>              <p className="text-xs sm:text-sm text-gray-500 mt-2">
+                {getTotalVotes(activePoll.voteCounts || {})} people have voted
+              </p>            </div>
 
             {/* Voting Buttons */}
             <div className="space-y-3">
