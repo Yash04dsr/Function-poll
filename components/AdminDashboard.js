@@ -5,6 +5,7 @@ import {
   collection,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
@@ -107,6 +108,23 @@ export default function AdminDashboard() {
     }
   };
 
+  // Delete a poll
+  const handleDeletePoll = async (pollId, pollName) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete "${pollName}"?\n\nThis action cannot be undone and will remove all votes for this poll.`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      await deleteDoc(doc(db, 'polls', pollId));
+      alert('Poll deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting poll:', error);
+      alert('Failed to delete poll');
+    }
+  };
+
   // Prepare leaderboard data with both metrics
   const leaderboardData = polls.map(poll => {
     const simpleAvg = calculateSimpleAverage(poll.voteCounts || {});
@@ -172,6 +190,7 @@ export default function AdminDashboard() {
                   <th className="py-3 px-4 text-gray-300 font-semibold">Raw Average Score</th>
                   <th className="py-3 px-4 text-gray-300 font-semibold">Overall Score</th>
                   <th className="py-3 px-4 text-gray-300 font-semibold">Breakdown</th>
+                  <th className="py-3 px-4 text-gray-300 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -218,6 +237,15 @@ export default function AdminDashboard() {
                         2★:{item.voteCounts?.vote2 || 0} | 
                         1★:{item.voteCounts?.vote1 || 0}
                       </td>
+                      <td className="py-3 px-4">
+                        <button
+                          onClick={() => handleDeletePoll(item.id, item.question)}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                          title="Delete this poll"
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
@@ -260,6 +288,13 @@ export default function AdminDashboard() {
                         Start Voting
                       </button>
                     )}
+                    <button
+                      onClick={() => handleDeletePoll(poll.id, poll.question)}
+                      className="px-4 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg font-semibold transition-colors"
+                      title="Delete poll"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
               ))
