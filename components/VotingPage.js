@@ -81,14 +81,14 @@ export default function VotingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center px-3 sm:px-4 py-4 sm:py-0">
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-100 mb-2">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-100 mb-2">
             🎭 Festival Voting
           </h1>
-          <p className="text-gray-400">Rate the performances in real-time</p>
+          <p className="text-sm sm:text-base text-gray-400">Rate the performances in real-time</p>
         </div>
 
         {/* Main Content */}

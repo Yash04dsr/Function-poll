@@ -11,10 +11,10 @@ export default function Home() {
       </Head>
 
       <div className="text-center max-w-3xl">
-        <h1 className="text-5xl md:text-6xl font-bold mb-6 text-gray-100">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 text-gray-100">
           🎭 Festival Voting App
         </h1>
-        <p className="text-xl md:text-2xl text-gray-400 mb-12">
+        <p className="text-lg sm:text-xl md:text-2xl text-gray-400 mb-8 sm:mb-12">
           Real-Time Voting System for Cultural Performances
         </p>
 

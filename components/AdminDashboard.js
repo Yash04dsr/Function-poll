@@ -147,8 +147,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <h1 className="text-4xl font-bold mb-8 text-center text-gray-100">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-8 max-w-7xl">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-8 text-center text-gray-100">
           🎭 Festival Admin Dashboard
         </h1>
 
