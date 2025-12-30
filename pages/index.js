@@ -18,7 +18,7 @@ export default function Home() {
           Real-Time Voting System for Cultural Performances
         </p>
 
-        <div className="grid md:grid-cols-2 gap-6 mt-8">
+        <div className="grid md:grid-cols-3 gap-6 mt-8">
           {/* Voter Card */}
           <a
             href="/vote"
@@ -46,6 +46,41 @@ export default function Home() {
               </svg>
             </div>
           </a>
+
+          {/* Judge Card */}
+          <div className="bg-gradient-to-br from-purple-800 to-indigo-800 border-2 border-purple-600 rounded-2xl p-8 shadow-xl">
+            <div className="text-6xl mb-4">⚖️</div>
+            <h2 className="text-3xl font-bold mb-3">Judges</h2>
+            <p className="text-gray-200 mb-6">
+              Password-protected judge panels
+            </p>
+            <div className="space-y-2">
+              <a
+                href="/judge/dance1"
+                className="block bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 text-sm font-semibold transition-all text-center"
+              >
+                🎭 Dance Judge 1
+              </a>
+              <a
+                href="/judge/dance2"
+                className="block bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 text-sm font-semibold transition-all text-center"
+              >
+                🎭 Dance Judge 2
+              </a>
+              <a
+                href="/judge/music1"
+                className="block bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 text-sm font-semibold transition-all text-center"
+              >
+                🎵 Music Judge 1
+              </a>
+              <a
+                href="/judge/music2"
+                className="block bg-white/10 hover:bg-white/20 rounded-lg px-4 py-2 text-sm font-semibold transition-all text-center"
+              >
+                🎵 Music Judge 2
+              </a>
+            </div>
+          </div>
 
           {/* Admin Card */}
           <a

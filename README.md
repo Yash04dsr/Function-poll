@@ -5,12 +5,22 @@ A real-time voting application for cultural festivals built with Next.js and Fir
 ## 🎯 Features
 
 - **Real-Time Voting**: Instant vote updates using Firebase Firestore
+- **Multi-Judge System**: 
+  - 4 separate judge panels (Dance Judge 1 & 2, Music Judge 1 & 2)
+  - Category-based poll filtering (Dance/Drama vs Music)
+  - Password-protected judge access
 - **Smart Ranking System**: 
   - **Raw Average**: Simple average scoring
   - **Bayesian Average**: IMDb-style weighted ranking that prevents low-vote bias
-- **Admin Dashboard**: Create polls, control voting, and view leaderboard
+  - **Judge Average**: Average of judge ratings (1-5 stars)
+  - **Final Score**: Combined audience and judge scoring
+- **Admin Dashboard**: 
+  - Create polls with category selection
+  - Control voting sessions
+  - View comprehensive split-view leaderboard
+  - Export results to CSV
 - **Mobile-Optimized**: Responsive design with large, easy-to-tap buttons
-- **Dark Mode UI**: Easy on the eyes with Tailwind CSS
+- **Dark Mode UI**: Beautiful gradient design with Tailwind CSS
 - **No Login Required**: Voters use LocalStorage to prevent double voting
 
 ## 📊 Scoring Logic
@@ -18,7 +28,7 @@ A real-time voting application for cultural festivals built with Next.js and Fir
 ### 1. Raw Quality (Simple Average)
 $$\text{Score} = \frac{\text{Total Score}}{\text{Total Votes}}$$
 
-### 2. True Rank (Bayesian Average)
+### 2. Audience Overall Score (Bayesian Average)
 $$WR = \frac{v}{v+m} \times R + \frac{m}{v+m} \times C$$
 
 Where:
@@ -26,6 +36,12 @@ Where:
 - $v$ = Total votes for this performance
 - $m$ = Minimum votes threshold (default: 10)
 - $C$ = Festival-wide average (default: 3.0)
+
+### 3. Judge Average
+$$\text{Judge Average} = \frac{\text{Judge}_1 + \text{Judge}_2}{2}$$
+
+### 4. Final Score
+$$\text{Final Score} = \frac{\text{Audience Overall Score} + \text{Judge Average}}{2}$$
 
 ## 🚀 Setup Instructions
 
@@ -86,6 +102,12 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_ADMIN_PASSWORD=your_secure_password
+
+# Judge Passwords
+NEXT_PUBLIC_DANCE_JUDGE1_PASSWORD=dance1pass
+NEXT_PUBLIC_DANCE_JUDGE2_PASSWORD=dance2pass
+NEXT_PUBLIC_MUSIC_JUDGE1_PASSWORD=music1pass
+NEXT_PUBLIC_MUSIC_JUDGE2_PASSWORD=music2pass
 ```
 
 ### 4. Run the Development Server
@@ -99,33 +121,58 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 📱 Usage
 
 ### For Voters (Audience)
+Judges
 
-1. Navigate to `/vote` or click "Vote" on the homepage
-2. Wait for the admin to start a poll
-3. When a poll is active, rate it from 1-5 stars
-4. Your vote is saved locally to prevent duplicates
+1. Access your judge panel:
+   - **Dance Judge 1**: [http://localhost:3000/judge/dance1](http://localhost:3000/judge/dance1)
+   - **Dance Judge 2**: [http://localhost:3000/judge/dance2](http://localhost:3000/judge/dance2)
+   - **Music Judge 1**: [http://localhost:3000/judge/music1](http://localhost:3000/judge/music1)
+   - **Music Judge 2**: [http://localhost:3000/judge/music2](http://localhost:3000/judge/music2)
+2. Login with your unique password (default: `dance1pass`, `dance2pass`, etc.)
+3. Only polls in your category (Dance/Drama or Music) will appear
+4. Rate performances from 1-5 stars
+5. Ratings can be changed anytime during active voting
 
 ### For Admins (Organizers)
 
 1. Navigate to `/admin` or click "Admin" on the homepage
 2. Login with your admin password (default: `admin123`)
-3. **Create Poll**: Enter the performance/question name
-4. **Start Voting**: Click "Start Voting" to activate a poll
-5. **View Results**: See the leaderboard with both Raw Average and Bayesian Score
-6. **Stop Voting**: Click "Stop Voting" when done
+3. **Create Poll**: 
+   - Enter the performance name
+   - Select category: Dance/Drama or Music
+4. **Start Voting**: Click "Start Voting" to activate a poll for audience and judges
+5. **View Results**: See comprehensive split-view leaderboard with:
+   - Audience votes (Total, Raw Avg, Overall Score)
+   - Judge votes (Individual + Average)
+   - Final Score (Combined)
+6. **Export CSV**: Download complete results with all metrics
+7. **Stop Voting**: Click "Stop Voting" when done
 
 ## 🏗️ Project Structure
 
 ```
 festival-voting-app/
 ├── components/
-│   ├── AdminDashboard.js    # Admin interface with poll controls & leaderboard
-│   └── VotingPage.js         # Voter interface with real-time updates
+│   ├── AdminDashboard.js    # Admin interface with split-view leaderboard
+│   ├── VotingPage.js         # Audience voting interface
+│   └── JudgeVotingPage.js    # Judge rating interface
 ├── lib/
 │   ├── firebase.js           # Firebase configuration
 │   └── utils.js              # Scoring calculation functions
 ├── pages/
 │   ├── _app.js               # Next.js app wrapper
+│   ├── index.js              # Homepage
+│   ├── admin.js              # Admin login & dashboard page
+│   ├── vote.js               # Audience voting page
+│   └── judge/
+│       ├── dance1.js         # Dance Judge 1 login & panel
+│       ├── dance2.js         # Dance Judge 2 login & panel
+│       ├── music1.js         # Music Judge 1 login & panel
+│       └── music2.js         # Music Judge 2 login & panel
+├── styles/
+│   └── globals.css           # Global Tailwind CSS styles
+├── .env.local                # Environment variables (create this)
+├── JUDGE_SETUP.md            # Judge system documentation
 │   ├── index.js              # Homepage
 │   ├── admin.js              # Admin login & dashboard page
 │   └── vote.js               # Voting page
