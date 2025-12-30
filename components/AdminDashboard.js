@@ -191,12 +191,12 @@ export default function AdminDashboard() {
         `"${item.question}"`,
         item.type || 'N/A',
         item.totalVotes,
-        formatScore(item.simpleAverage),
-        formatScore(item.bayesianAverage),
+        formatScore(item.simpleAverage, 4),
+        formatScore(item.bayesianAverage, 4),
         judge1 > 0 ? judge1 : '-',
         judge2 > 0 ? judge2 : '-',
-        formatScore(item.judgeAverage),
-        formatScore(item.finalScore),
+        formatScore(item.judgeAverage, 4),
+        formatScore(item.finalScore, 4),
         item.voteCounts?.vote5 || 0,
         item.voteCounts?.vote4 || 0,
         item.voteCounts?.vote3 || 0,
@@ -390,12 +390,12 @@ export default function AdminDashboard() {
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-purple-300">Raw Avg:</span>
-                            <span className="font-bold text-white">{formatScore(item.simpleAverage)}</span>
+                            <span className="font-bold text-white" title={`Exact: ${item.simpleAverage}`}>{formatScore(item.simpleAverage, 4)}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-purple-300">Overall Score:</span>
-                            <span className="font-bold text-xl text-purple-200">
-                              {formatScore(item.bayesianAverage)}
+                            <span className="font-bold text-xl text-purple-200" title={`Exact: ${item.bayesianAverage}`}>
+                              {formatScore(item.bayesianAverage, 4)}
                             </span>
                           </div>
                           <div className="pt-2 mt-2 border-t border-white/20 text-xs text-purple-400">
@@ -428,8 +428,8 @@ export default function AdminDashboard() {
                           </div>
                           <div className="flex justify-between pt-2 mt-2 border-t border-white/20">
                             <span className="text-yellow-300">Judge Average:</span>
-                            <span className="font-bold text-xl text-yellow-200">
-                              {item.judgeAverage > 0 ? formatScore(item.judgeAverage) : '-'}
+                            <span className="font-bold text-xl text-yellow-200" title={item.judgeAverage > 0 ? `Exact: ${item.judgeAverage}` : ''}>
+                              {item.judgeAverage > 0 ? formatScore(item.judgeAverage, 4) : '-'}
                             </span>
                           </div>
                         </div>
@@ -442,12 +442,12 @@ export default function AdminDashboard() {
                         <span className="text-xl font-bold text-yellow-300">
                           🏆 FINAL SCORE
                         </span>
-                        <span className="text-4xl font-bold text-white">
-                          {formatScore(item.finalScore)}
+                        <span className="text-4xl font-bold text-white" title={`Exact: ${item.finalScore}`}>
+                          {formatScore(item.finalScore, 4)}
                         </span>
                       </div>
-                      <p className="text-sm text-yellow-200 mt-2 text-right">
-                        (Audience {formatScore(item.bayesianAverage)} + Judge {item.judgeAverage > 0 ? formatScore(item.judgeAverage) : '0.00'}) / 2
+                      <p className="text-sm text-yellow-200 mt-2 text-right" title={`Full precision: (${item.bayesianAverage} + ${item.judgeAverage > 0 ? item.judgeAverage : 0}) / 2`}>
+                        (Audience {formatScore(item.bayesianAverage, 4)} + Judge {item.judgeAverage > 0 ? formatScore(item.judgeAverage, 4) : '0.0000'}) / 2
                       </p>
                     </div>
 
