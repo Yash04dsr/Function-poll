@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, query, updateDoc, doc, increment } from 'firebase/firestore';
 import { getTotalVotes } from '../lib/utils';
+import PollTimer from './PollTimer';
 
 export default function VotingPage() {
   const [activePoll, setActivePoll] = useState(null);
@@ -11,6 +12,7 @@ export default function VotingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isExpired, setIsExpired] = useState(false);
 
   // Real-time listener for active poll
   useEffect(() => {
@@ -26,6 +28,9 @@ export default function VotingPage() {
       const active = polls.find(poll => poll.isActive === true);
       setActivePoll(active || null);
       setIsLoading(false);
+      
+      // Reset expired state for new poll
+      setIsExpired(false);
       
       // Check if user has already voted for this poll
       if (active) {
@@ -48,7 +53,7 @@ export default function VotingPage() {
 
   // Handle vote submission
   const handleVote = async (rating) => {
-    if (!activePoll || hasVoted || isSubmitting) return;
+    if (!activePoll || hasVoted || isSubmitting || isExpired) return;
 
     setIsSubmitting(true);
     setSelectedRating(rating);
@@ -200,9 +205,31 @@ export default function VotingPage() {
               <h2 className="text-2xl md:text-3xl font-bold mb-2">
                 {activePoll.question}
               </h2>
-              <p className="text-gray-400">Tap a rating to submit your vote</p>              <p className="text-xs sm:text-sm text-gray-500 mt-2">
+              <p className="text-gray-400">Tap a rating to submit your vote</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-2">
                 {getTotalVotes(activePoll.voteCounts || {})} people have voted
-              </p>            </div>
+              </p>
+            </div>
+
+            {/* Timer Display */}
+            {activePoll.startTime && (activePoll.duration || 60) && (
+              <div className="mb-6">
+                <PollTimer 
+                  startTime={activePoll.startTime}
+                  duration={activePoll.duration || 60}
+                  onExpire={() => setIsExpired(true)}
+                />
+              </div>
+            )}
+
+            {/* Expired Message */}
+            {isExpired && (
+              <div className="mb-6 p-4 bg-red-500/20 border-2 border-red-400 rounded-xl text-center">
+                <p className="text-red-300 font-bold text-lg">
+                  🔒 Voting has closed for this poll
+                </p>
+              </div>
+            )}
 
             {/* Voting Buttons */}
             <div className="space-y-3">
@@ -210,7 +237,7 @@ export default function VotingPage() {
                 <button
                   key={rating.value}
                   onClick={() => handleVote(rating.value)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isExpired}
                   className={`
                     w-full flex items-center justify-between
                     p-5 md:p-6 rounded-xl

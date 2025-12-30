@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot, query, updateDoc, doc } from 'firebase/firestore';
 import { getTotalVotes } from '../lib/utils';
+import PollTimer from './PollTimer';
 
 export default function JudgeVotingPage({ judgeId, judgeName, category }) {
   const [polls, setPolls] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [submittingPollId, setSubmittingPollId] = useState(null);
+  const [expiredPolls, setExpiredPolls] = useState({});
 
   // Real-time listener for polls
   useEffect(() => {
@@ -24,15 +26,32 @@ export default function JudgeVotingPage({ judgeId, judgeName, category }) {
         poll.type === category && poll.isActive === true
       );
       
+      // Reset expired state for new/removed polls
+      setExpiredPolls(prev => {
+        const newExpired = {};
+        relevantPolls.forEach(poll => {
+          if (prev[poll.id]) {
+            newExpired[poll.id] = prev[poll.id];
+          }
+        });
+        return newExpired;
+      });
+      
       setPolls(relevantPolls);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [category]);
+  }, [category, judgeName]);
 
   // Handle judge rating submission
   const handleRate = async (pollId, rating) => {
+    // Check if poll is expired
+    if (expiredPolls[pollId]) {
+      alert('⏱️ Time has expired for this poll');
+      return;
+    }
+    
     setSubmittingPollId(pollId);
     
     try {
@@ -120,6 +139,26 @@ export default function JudgeVotingPage({ judgeId, judgeName, category }) {
                     </h2>
                   </div>
 
+                  {/* Timer Display */}
+                  {poll.startTime && (poll.duration || 60) && (
+                    <div className="mb-6">
+                      <PollTimer 
+                        startTime={poll.startTime}
+                        duration={poll.duration || 60}
+                        onExpire={() => setExpiredPolls(prev => ({ ...prev, [poll.id]: true }))}
+                      />
+                    </div>
+                  )}
+
+                  {/* Expired Message */}
+                  {expiredPolls[poll.id] && (
+                    <div className="mb-6 p-4 bg-red-500/20 border-2 border-red-400 rounded-xl text-center">
+                      <p className="text-red-300 font-bold text-lg">
+                        🔒 Rating time has expired for this poll
+                      </p>
+                    </div>
+                  )}
+
                   {/* Current Rating Display */}
                   {currentRating > 0 && (
                     <div className="mb-4 p-4 bg-green-500/20 border border-green-400/50 rounded-lg">
@@ -142,14 +181,14 @@ export default function JudgeVotingPage({ judgeId, judgeName, category }) {
                         <button
                           key={rating}
                           onClick={() => handleRate(poll.id, rating)}
-                          disabled={submittingPollId === poll.id}
+                          disabled={submittingPollId === poll.id || expiredPolls[poll.id]}
                           className={`
                             py-6 rounded-xl font-bold text-2xl transition-all transform hover:scale-105
                             ${currentRating === rating
                               ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-lg ring-4 ring-yellow-300'
                               : 'bg-white/20 hover:bg-white/30 text-white'
                             }
-                            ${submittingPollId === poll.id ? 'opacity-50 cursor-not-allowed' : ''}
+                            ${(submittingPollId === poll.id || expiredPolls[poll.id]) ? 'opacity-50 cursor-not-allowed' : ''}
                           `}
                         >
                           <div className="flex flex-col items-center">

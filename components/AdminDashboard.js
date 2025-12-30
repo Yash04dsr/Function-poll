@@ -21,11 +21,13 @@ import {
   calculateJudgeAverage,
   calculateFinalScore,
 } from '../lib/utils';
+import PollTimer from './PollTimer';
 
 export default function AdminDashboard() {
   const [polls, setPolls] = useState([]);
   const [newPollQuestion, setNewPollQuestion] = useState('');
   const [newPollType, setNewPollType] = useState('Dance/Drama');
+  const [newPollDuration, setNewPollDuration] = useState(60);
   const [isCreating, setIsCreating] = useState(false);
   const [festivalAverage, setFestivalAverage] = useState(3.0);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,6 +53,36 @@ export default function AdminDashboard() {
     return () => unsubscribe();
   }, []);
 
+  // Auto-stop expired polls
+  useEffect(() => {
+    const checkExpiredPolls = async () => {
+      const now = Date.now();
+      
+      for (const poll of polls) {
+        if (poll.isActive && poll.startTime && poll.duration) {
+          const elapsed = Math.floor((now - poll.startTime) / 1000);
+          
+          if (elapsed >= poll.duration) {
+            try {
+              await updateDoc(doc(db, 'polls', poll.id), { 
+                isActive: false,
+                startTime: null
+              });
+              console.log(`Auto-stopped poll: ${poll.question}`);
+            } catch (error) {
+              console.error('Error auto-stopping poll:', error);
+            }
+          }
+        }
+      }
+    };
+
+    // Check every second
+    const interval = setInterval(checkExpiredPolls, 1000);
+    
+    return () => clearInterval(interval);
+  }, [polls]);
+
   // Create a new poll
   const handleCreatePoll = async () => {
     if (!newPollQuestion.trim()) {
@@ -63,6 +95,7 @@ export default function AdminDashboard() {
       await addDoc(collection(db, 'polls'), {
         question: newPollQuestion.trim(),
         type: newPollType,
+        duration: newPollDuration,
         isActive: false,
         voteCounts: {
           vote1: 0,
@@ -82,6 +115,7 @@ export default function AdminDashboard() {
       
       setNewPollQuestion('');
       setNewPollType('Dance/Drama');
+      setNewPollDuration(60);
       alert('Poll created successfully!');
     } catch (error) {
       console.error('Error creating poll:', error);
@@ -97,12 +131,15 @@ export default function AdminDashboard() {
       // First, deactivate all other polls
       const deactivatePromises = polls
         .filter(p => p.isActive && p.id !== pollId)
-        .map(p => updateDoc(doc(db, 'polls', p.id), { isActive: false }));
+        .map(p => updateDoc(doc(db, 'polls', p.id), { isActive: false, startTime: null }));
       
       await Promise.all(deactivatePromises);
       
-      // Then activate the selected poll
-      await updateDoc(doc(db, 'polls', pollId), { isActive: true });
+      // Then activate the selected poll with current timestamp
+      await updateDoc(doc(db, 'polls', pollId), { 
+        isActive: true,
+        startTime: Date.now()
+      });
       alert('Voting started!');
     } catch (error) {
       console.error('Error starting voting:', error);
@@ -113,7 +150,7 @@ export default function AdminDashboard() {
   // Stop voting for a poll
   const handleStopVoting = async (pollId) => {
     try {
-      await updateDoc(doc(db, 'polls', pollId), { isActive: false });
+      await updateDoc(doc(db, 'polls', pollId), { isActive: false, startTime: null });
       alert('Voting stopped!');
     } catch (error) {
       console.error('Error stopping voting:', error);
@@ -225,14 +262,24 @@ export default function AdminDashboard() {
               className="flex-1 px-4 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white placeholder-purple-300"
               onKeyPress={(e) => e.key === 'Enter' && handleCreatePoll()}
             />
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <select
                 value={newPollType}
                 onChange={(e) => setNewPollType(e.target.value)}
-                className="flex-1 px-4 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+                className="px-4 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
               >
                 <option value="Dance/Drama" className="bg-gray-800">🎭 Dance/Drama</option>
                 <option value="Music" className="bg-gray-800">🎵 Music</option>
+              </select>
+              <select
+                value={newPollDuration}
+                onChange={(e) => setNewPollDuration(Number(e.target.value))}
+                className="px-4 py-3 bg-white/20 border border-white/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+              >
+                <option value={30} className="bg-gray-800">⏱️ 30 seconds</option>
+                <option value={60} className="bg-gray-800">⏱️ 60 seconds</option>
+                <option value={90} className="bg-gray-800">⏱️ 90 seconds</option>
+                <option value={120} className="bg-gray-800">⏱️ 2 minutes</option>
               </select>
               <button
                 onClick={handleCreatePoll}
@@ -430,40 +477,54 @@ export default function AdminDashboard() {
               polls.map(poll => (
                 <div
                   key={poll.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white/10 rounded-lg gap-4"
+                  className="flex flex-col p-4 bg-white/10 rounded-lg gap-4"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg text-white">{poll.question}</h3>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        poll.type === 'Dance/Drama' 
-                          ? 'bg-pink-500/30 text-pink-200' 
-                          : 'bg-blue-500/30 text-blue-200'
-                      }`}>
-                        {poll.type === 'Dance/Drama' ? '🎭' : '🎵'}
-                      </span>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg text-white">{poll.question}</h3>
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          poll.type === 'Dance/Drama' 
+                            ? 'bg-pink-500/30 text-pink-200' 
+                            : 'bg-blue-500/30 text-blue-200'
+                        }`}>
+                          {poll.type === 'Dance/Drama' ? '🎭' : '🎵'}
+                        </span>
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-purple-500/30 text-purple-200">
+                          ⏱️ {poll.duration || 60}s
+                        </span>
+                      </div>
+                      <p className="text-sm text-purple-300">
+                        Total Votes: {getTotalVotes(poll.voteCounts || {})}
+                      </p>
                     </div>
-                    <p className="text-sm text-purple-300">
-                      Total Votes: {getTotalVotes(poll.voteCounts || {})}
-                    </p>
+                    <div className="flex gap-2 flex-shrink-0">
+                      {poll.isActive ? (
+                        <button
+                          onClick={() => handleStopVoting(poll.id)}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-all"
+                        >
+                          Stop Voting
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleStartVoting(poll.id)}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-all"
+                        >
+                          Start Voting
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    {poll.isActive ? (
-                      <button
-                        onClick={() => handleStopVoting(poll.id)}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition-all"
-                      >
-                        Stop Voting
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleStartVoting(poll.id)}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-all"
-                      >
-                        Start Voting
-                      </button>
-                    )}
-                  </div>
+                  
+                  {/* Timer Display */}
+                  {poll.isActive && poll.startTime && (
+                    <PollTimer 
+                      startTime={poll.startTime}
+                      duration={poll.duration || 60}
+                      onExpire={() => handleStopVoting(poll.id)}
+                    />
+                  )}
                 </div>
               ))
             )}
