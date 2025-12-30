@@ -1,5 +1,5 @@
 // pages/judge/music2.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import JudgeVotingPage from '../../components/JudgeVotingPage';
 
 export default function MusicJudge2() {
@@ -8,17 +8,33 @@ export default function MusicJudge2() {
   const [error, setError] = useState('');
 
   const JUDGE_PASSWORD = process.env.NEXT_PUBLIC_MUSIC_JUDGE2_PASSWORD || 'music2pass';
+  const STORAGE_KEY = 'judge_music2_auth';
+
+  // Check if already authenticated on mount
+  useEffect(() => {
+    const authStatus = localStorage.getItem(STORAGE_KEY);
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();
     
     if (password === JUDGE_PASSWORD) {
       setIsAuthenticated(true);
+      localStorage.setItem(STORAGE_KEY, 'true');
       setError('');
     } else {
       setError('Incorrect password. Please try again.');
       setPassword('');
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setIsAuthenticated(false);
+    setPassword('');
   };
 
   if (!isAuthenticated) {
@@ -67,6 +83,7 @@ export default function MusicJudge2() {
       judgeId="music2"
       judgeName="Music Judge 2"
       category="Music"
+      onLogout={handleLogout}
     />
   );
 }

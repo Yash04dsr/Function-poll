@@ -5,7 +5,7 @@ import { collection, onSnapshot, query, updateDoc, doc } from 'firebase/firestor
 import { getTotalVotes } from '../lib/utils';
 import PollTimer from './PollTimer';
 
-export default function JudgeVotingPage({ judgeId, judgeName, category }) {
+export default function JudgeVotingPage({ judgeId, judgeName, category, onLogout }) {
   const [polls, setPolls] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [submittingPollId, setSubmittingPollId] = useState(null);
@@ -76,11 +76,26 @@ export default function JudgeVotingPage({ judgeId, judgeName, category }) {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            🎭 Judge Panel
-          </h1>
-          <p className="text-xl text-purple-200">{judgeName}</p>
-          <p className="text-lg text-purple-300">Category: {category}</p>
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex-1"></div>
+            <div className="flex-1 text-center">
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+                🎭 Judge Panel
+              </h1>
+            </div>
+            <div className="flex-1 flex justify-end">
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="px-3 py-2 sm:px-4 sm:py-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-semibold rounded-lg transition-all whitespace-nowrap"
+                >
+                  🚪 Logout
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-lg sm:text-xl text-purple-200">{judgeName}</p>
+          <p className="text-base sm:text-lg text-purple-300">Category: {category}</p>
         </div>
 
         {/* Active Polls */}
